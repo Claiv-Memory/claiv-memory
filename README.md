@@ -215,3 +215,7 @@ LoCoMo is the standard benchmark for long-context conversational memory systems.
 ---
 
 *Keywords: ai memory, llm memory, chatbot memory, ai agent memory, langchain memory, rag memory, openai memory, persistent memory, chatbot context, conversational memory, vector database alternative*
+
+---
+
+⭐ **If this saves you time, give it a star** — it helps other developers find it.
