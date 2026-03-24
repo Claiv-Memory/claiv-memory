@@ -1,5 +1,8 @@
 # CLAIV Memory — LLM Memory Layer for AI Chatbots and Agents
 
+> **LLM memory for chatbots, AI agents, and RAG systems.**
+> chatbot memory · llm memory · ai agent memory · langchain memory alternative · rag memory system · persistent memory for openai · conversational ai memory
+
 > Persistent memory for OpenAI, Claude, LangChain, and any AI application.
 > Drop in 3 API calls. Your AI remembers everything.
 
