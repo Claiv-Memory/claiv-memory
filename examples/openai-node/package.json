@@ -1,0 +1,8 @@
+{
+  "name": "claiv-openai-example",
+  "type": "module",
+  "dependencies": {
+    "@claiv/memory": "^0.6.4",
+    "openai": "^4.0.0"
+  }
+}
