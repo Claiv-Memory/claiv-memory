@@ -50,9 +50,6 @@ const memory = await claiv.recall({
   query: 'What does this user do?',
 });
 
-// → memory.llm_context.text contains:
-// "User runs a fitness business. Prefers morning workouts."
-
 // Inject into your system prompt
 const response = await openai.chat.completions.create({
   model: 'gpt-4o',
@@ -63,7 +60,7 @@ const response = await openai.chat.completions.create({
 });
 ```
 
-Same for Python:
+Python:
 
 ```bash
 pip install claiv-memory
@@ -99,45 +96,42 @@ system_prompt = f"User context:\n{memory['llm_context']['text']}"
 |---|---|---|
 | Stores | Raw chat history | Structured, deduplicated facts |
 | Long conversations | Breaks (token overflow) | No limit |
-| Contradiction handling | ❌ Keeps both | ✅ Resolved automatically |
+| Contradiction handling | ❌ | ✅ Resolved automatically |
 | Cross-session memory | ❌ | ✅ |
 | Document memory | ❌ | ✅ Built-in |
 | GDPR deletion | ❌ | ✅ Audit receipt |
 | LoCoMo benchmark | — | 75.0% |
 
-**LangChain memory not working for your use case?** CLAIV is a drop-in replacement that scales.
+**LangChain memory not working?** CLAIV is a drop-in replacement.
 
 ---
 
 ## Why not just use a vector database?
 
-Vector databases (Pinecone, Weaviate, Chroma) give you similarity search.
-CLAIV gives you **structured memory**:
+Vector databases give you similarity search. CLAIV gives you structured memory:
 
-- Facts are extracted and deduplicated
-- Temporal reasoning built in ("what did the user say last week?")
-- Contradictions are resolved, not duplicated
-- Token-budget-aware recall — no stuffing 50 chunks into a prompt
+- Facts are extracted and deduplicated — no contradictions
+- Temporal reasoning built in
+- Token-budget-aware recall — not 50 raw chunks
+- Document memory + conversation memory in one call
 - Forget with a real audit trail
 
 ---
 
-## What CLAIV does
+## How it works
 
 ```
 POST /v6/ingest     →  Store a memory event (conversation turn, app event)
-POST /v6/recall     →  Retrieve structured context for the next LLM response
+POST /v6/recall     →  Retrieve ranked context — ready to inject into your prompt
 POST /v6/documents  →  Upload a document for persistent RAG
 POST /v6/forget     →  Delete user data (GDPR-compliant, timestamped receipt)
 ```
-
-Ingest is async. Recall is synchronous and returns `llm_context.text` — ready to paste into your system prompt.
 
 ---
 
 ## Document memory (built-in RAG)
 
-Don't want to manage a vector database? Upload documents directly to CLAIV:
+Upload documents directly — no separate vector database needed:
 
 ```javascript
 const doc = await claiv.uploadDocument({
@@ -146,61 +140,41 @@ const doc = await claiv.uploadDocument({
   document_name: 'Product Manual',
   content: documentText,
 });
-
-// Next recall automatically uses the document
-const memory = await claiv.recall({
-  user_id: 'user_123',
-  conversation_id: 'chat_abc',
-  query: 'How do I install the product?',
-});
+// Spans indexed immediately. Recall automatically surfaces relevant sections.
 ```
-
-Documents are parsed into sections and spans, embedded with pgvector, and retrieved automatically at recall time. No separate vector DB needed.
 
 ---
 
 ## Examples
 
-| Example | Description |
-|---|---|
-| [examples/openai-node](examples/openai-node/) | OpenAI Node.js chatbot with persistent memory |
-| [examples/langchain](examples/langchain/) | LangChain agent with CLAIV memory |
-| [examples/nextjs](examples/nextjs/) | Next.js AI chat app with memory |
+Clone any example to get started immediately:
+
+| Example | Stack | Description |
+|---|---|---|
+| [examples/openai-nodejs](examples/openai-nodejs/) | Node.js + OpenAI | Chatbot with persistent memory |
+| [examples/openai-python](examples/openai-python/) | Python + OpenAI | Chatbot with persistent memory |
+| [examples/claude-python](examples/claude-python/) | Python + Claude | Anthropic Claude with memory |
+| [examples/langchain](examples/langchain/) | Python + LangChain | LangChain memory replacement |
+| [examples/nextjs](examples/nextjs/) | Next.js + OpenAI | Streaming chat app with memory |
+| [examples/document-rag-python](examples/document-rag-python/) | Python | Document upload + question answering |
+| [examples/document-rag-nextjs](examples/document-rag-nextjs/) | Next.js | Drag-and-drop document RAG app |
 
 ---
 
-## Templates (clone and deploy)
+## Deployable app
 
-| Template | Stack | Link |
-|---|---|---|
-| OpenAI Node.js | Node.js + OpenAI | [template-openai-nodejs](https://github.com/Claiv-Memory/template-openai-nodejs) |
-| OpenAI Python | Python + OpenAI | [template-openai-python](https://github.com/Claiv-Memory/template-openai-python) |
-| Claude Python | Python + Claude | [template-claude-python](https://github.com/Claiv-Memory/template-claude-python) |
-| LangChain | Python + LangChain | [template-langchain](https://github.com/Claiv-Memory/template-langchain) |
-| Next.js chat | Next.js + OpenAI | [template-nextjs](https://github.com/Claiv-Memory/template-nextjs) |
-| Document RAG Python | Python + document upload | [template-document-rag-python](https://github.com/Claiv-Memory/template-document-rag-python) |
-| Document RAG Next.js | Next.js + document upload | [template-document-rag-nextjs](https://github.com/Claiv-Memory/template-document-rag-nextjs) |
+Want a full working chatbot you can deploy in one click?
+
+👉 [ai-chatbot-with-memory](https://github.com/Claiv-Memory/ai-chatbot-with-memory) — Next.js + OpenAI + CLAIV. Vercel deploy button included.
 
 ---
 
 ## SDKs
 
-| | Install | Docs |
+| | Install | Repo |
 |---|---|---|
 | JavaScript / TypeScript | `npm install @claiv/memory` | [sdk-js](https://github.com/Claiv-Memory/sdk-js) |
 | Python | `pip install claiv-memory` | [sdk-py](https://github.com/Claiv-Memory/sdk-py) |
-
----
-
-## Use cases
-
-- **AI chatbots** that remember users across sessions
-- **AI agents** that maintain context across multi-step workflows
-- **SaaS apps** with per-user memory
-- **Customer support** bots that know customer history
-- **Internal copilots** over company documents
-- **Research and compliance** tools with document memory
-- **Any app** replacing fragile prompt stuffing
 
 ---
 
@@ -216,6 +190,17 @@ Documents are parsed into sections and spans, embedded with pgvector, and retrie
 | Open-domain | 79.7% |
 
 LoCoMo is the standard benchmark for long-context conversational memory systems.
+
+---
+
+## Use cases
+
+- AI chatbots that remember users across sessions
+- AI agents with multi-step context
+- SaaS apps with per-user memory
+- Customer support bots that know customer history
+- Internal copilots over company documents
+- Research and compliance tools with document memory
 
 ---
 

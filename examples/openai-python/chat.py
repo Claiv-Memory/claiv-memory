@@ -1,27 +1,29 @@
 """
-Claiv Memory × LangChain — persistent memory agent.
+Claiv Memory × OpenAI — persistent memory chatbot.
 
-Replaces LangChain's session-only memory with Claiv's persistent
-cross-session memory. The agent remembers users across restarts.
+The AI remembers you across sessions. Close it, come back tomorrow,
+it picks up where you left off.
 """
 
 import os
+import uuid
 from dotenv import load_dotenv
 from claiv import ClaivClient
-from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from openai import OpenAI
 
 load_dotenv()
 
-claiv = ClaivClient(api_key=os.environ["CLAIV_API_KEY"])
-llm   = ChatOpenAI(model="gpt-4o-mini", api_key=os.environ["OPENAI_API_KEY"])
+claiv  = ClaivClient(api_key=os.environ["CLAIV_API_KEY"])
+openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+# In a real app these would come from your auth system.
+# Using fixed IDs here so memory persists across runs.
 USER_ID         = "demo-user-001"
 CONVERSATION_ID = "demo-conversation-001"
 
 
 def chat(user_message: str) -> str:
-    # 1. Recall from Claiv (replaces LangChain ConversationBufferMemory)
+    # 1. Recall — fetch everything Claiv knows about this user
     memory = claiv.recall({
         "user_id": USER_ID,
         "conversation_id": CONVERSATION_ID,
@@ -30,15 +32,17 @@ def chat(user_message: str) -> str:
 
     system_prompt = memory["llm_context"]["text"] or "You are a helpful assistant."
 
-    # 2. Call LangChain LLM
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_message),
-    ]
-    response = llm.invoke(messages)
-    reply = response.content
+    # 2. Call OpenAI with memory as the system prompt
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ],
+    )
+    reply = response.choices[0].message.content
 
-    # 3. Ingest into Claiv (persists across restarts, unlike LangChain memory)
+    # 3. Ingest — store this turn so it's remembered next time
     claiv.ingest({
         "user_id": USER_ID,
         "conversation_id": CONVERSATION_ID,
@@ -58,8 +62,8 @@ def chat(user_message: str) -> str:
 
 
 def main():
-    print("Claiv Memory × LangChain — press Ctrl+C to exit")
-    print("(Memory persists across restarts — try stopping and restarting)\n")
+    print("Claiv Memory chatbot — press Ctrl+C to exit")
+    print("(Memory persists across sessions — try closing and reopening)\n")
 
     while True:
         try:
@@ -67,7 +71,7 @@ def main():
             if not user_input:
                 continue
             reply = chat(user_input)
-            print(f"Agent: {reply}\n")
+            print(f"AI:  {reply}\n")
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
